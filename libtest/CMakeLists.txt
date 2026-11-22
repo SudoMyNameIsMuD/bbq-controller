@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
-project(cmake_test)
+project(bbq_tests)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_BUILD_TYPE Debug)
@@ -12,43 +12,59 @@ set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 
-ADD_DEFINITIONS(-DUNIT_TEST -DESP8266)
+ADD_DEFINITIONS(-DUNIT_TEST)
 
-set(LIB_SOURCES
-    ../.pio/libdeps/wemos/eFLL/FuzzyComposition.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzyIO.cpp
-    ../.pio/libdeps/wemos/eFLL/Fuzzy.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzyInput.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzyOutput.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzyRule.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzyRuleAntecedent.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzyRuleConsequent.cpp
-    ../.pio/libdeps/wemos/eFLL/FuzzySet.cpp
-    ../.pio/libdeps/wemos/rvt-OptionParser/src/optparser.cpp
-    ../lib/bbq/bbqfanonly.cpp
-    ../lib/bbq/pwmventilator.cpp
-    ../lib/bbq/NTCSensor.cpp
-    ../lib/bbq/onoffventilator.cpp
-    ../lib/bbq/analogin.cpp
-    ../lib/bbq/numericknob.cpp
-    ../lib/bbq/digitalknob.cpp
-    ../lib/bbq/analogin.cpp
-    ../lib/utils/propertyutils.cpp
-    ../lib/utils/utils.cpp
-    ../lib/utils/makestring.cpp
+# Host tests for the platform-independent controller core (no Arduino or
+# library dependencies).
+add_executable(coretests
+    coretests.cpp
+    ../lib/bbqcore/probechannel.cpp
+    ../lib/bbqcore/controllercore.cpp
+    ../lib/bbqcore/pdalgorithm.cpp
+    ../lib/bbqcore/persistedstate.cpp
 )
+target_include_directories(coretests PRIVATE ../lib/bbqcore)
+target_link_libraries(coretests Catch)
 
-set(LIB_HEADERS
-    stubs
-    ../.pio/libdeps/wemos/eFLL
-    ../.pio/libdeps/wemos/rvt-OptionParser/src
-    ../lib/bbq
-    ../lib/utils
-    Arduino.h
-)
+# Legacy tests for the retained lib/bbq code (fuzzy controller etc.). These
+# need the eFLL and opt-parser sources; point LEGACY_LIBDEPS at a directory
+# containing them (e.g. a PlatformIO libdeps folder) to enable.
+set(LEGACY_LIBDEPS "" CACHE PATH "Directory containing eFLL and rvt-OptionParser sources")
 
-include_directories(catch2 ${LIB_HEADERS})
+if(LEGACY_LIBDEPS)
+    ADD_DEFINITIONS(-DESP8266)
 
-# Make test executable
-add_executable(tests main.cpp src/arduinostubs.hpp ${LIB_SOURCES})
-target_link_libraries(tests Catch)
+    set(LIB_SOURCES
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyComposition.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyIO.cpp
+        ${LEGACY_LIBDEPS}/eFLL/Fuzzy.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyInput.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyOutput.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyRule.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyRuleAntecedent.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzyRuleConsequent.cpp
+        ${LEGACY_LIBDEPS}/eFLL/FuzzySet.cpp
+        ${LEGACY_LIBDEPS}/rvt-OptionParser/src/optparser.cpp
+        ../lib/bbq/bbqfanonly.cpp
+        ../lib/bbq/pwmventilator.cpp
+        ../lib/bbq/NTCSensor.cpp
+        ../lib/bbq/onoffventilator.cpp
+        ../lib/bbq/analogin.cpp
+        ../lib/bbq/numericknob.cpp
+        ../lib/bbq/digitalknob.cpp
+        ../lib/utils/propertyutils.cpp
+        ../lib/utils/utils.cpp
+        ../lib/utils/makestring.cpp
+    )
+
+    include_directories(
+        stubs
+        ${LEGACY_LIBDEPS}/eFLL
+        ${LEGACY_LIBDEPS}/rvt-OptionParser/src
+        ../lib/bbq
+        ../lib/utils
+    )
+
+    add_executable(tests main.cpp src/arduinostubs.hpp ${LIB_SOURCES})
+    target_link_libraries(tests Catch)
+endif()
