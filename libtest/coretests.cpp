@@ -6,3 +6,4 @@
 
 #include "src/test_probechannel.hpp"
 #include "src/test_controllercore.hpp"
+#include "src/test_controlsim.hpp"

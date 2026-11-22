@@ -151,8 +151,14 @@ struct BlowerFan : Service::Fan {
     }
 };
 
-inline void setup(AppContext& ctx, uint8_t statusLedPin, uint8_t controlButtonPin) {
-    homeSpan.setStatusPin(statusLedPin);
+inline void setup(AppContext& ctx, uint8_t statusLedPin, bool statusIsPixel,
+                  uint8_t controlButtonPin) {
+    if (statusIsPixel) {
+        homeSpan.setStatusPixel(statusLedPin);
+    } else {
+        homeSpan.setStatusPin(statusLedPin);
+    }
+
     homeSpan.setControlPin(controlButtonPin);
     homeSpan.begin(Category::Thermostats, "BBQ Controller");
 

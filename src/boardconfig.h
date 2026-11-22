@@ -22,9 +22,16 @@ constexpr uint8_t PIN_BLOWER_PWM = 16;
 constexpr uint32_t BLOWER_PWM_FREQ_HZ = 25000; // adjust to the selected driver
 constexpr uint8_t BLOWER_PWM_RESOLUTION_BITS = 10;
 
-// HomeSpan status LED and control/reset button (BOOT button on DevKitC-1).
-constexpr uint8_t PIN_STATUS_LED = 48; // on-board RGB LED data pin on many DevKitC-1s
+// HomeSpan status indicator and control/reset button (BOOT button on
+// DevKitC-1). GPIO48 is the on-board *addressable RGB* (WS2812) pixel on
+// most DevKitC-1 boards and is driven via homeSpan.setStatusPixel(); if your
+// board has a plain status LED instead, set STATUS_IS_PIXEL to false.
+constexpr uint8_t PIN_STATUS_LED = 48;
+constexpr bool STATUS_IS_PIXEL = true;
 constexpr uint8_t PIN_CONTROL_BUTTON = 0;
 
 // Sampling cadence.
 constexpr uint32_t SAMPLE_INTERVAL_MS = 1000;
+
+// Main-loop task watchdog timeout.
+constexpr uint32_t WATCHDOG_TIMEOUT_MS = 15000;

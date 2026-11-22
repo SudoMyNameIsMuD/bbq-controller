@@ -12,9 +12,10 @@
 
 #include <Arduino.h>
 #include <HomeSpan.h>
+#include <esp_task_wdt.h>
 
 #include <controllercore.h>
-#include <pdalgorithm.h>
+#include <pidalgorithm.h>
 #include <probechannel.h>
 
 #include "appcontext.h"
@@ -33,7 +34,7 @@ ProbeChannel food2Channel;
 
 ControllerConfig controllerConfig;
 ControllerCore core(controllerConfig, pitChannel);
-PdControlAlgorithm algorithm;
+PidControlAlgorithm algorithm;
 AppContext ctx(core, pitChannel, food1Channel, food2Channel);
 
 ProbeReader pitReader(ProbeHardwareConfig{PIN_PROBE_PIT}, pitChannel);
@@ -53,6 +54,15 @@ void setup() {
     // Blower hardware off before anything else runs.
     blower.begin();
 
+    // Task watchdog: a hung main loop must not leave the blower running.
+    // A watchdog reset reboots into the default-off startup path.
+    esp_task_wdt_config_t wdtConfig = {};
+    wdtConfig.timeout_ms = WATCHDOG_TIMEOUT_MS;
+    wdtConfig.idle_core_mask = 0;
+    wdtConfig.trigger_panic = true;
+    esp_task_wdt_reconfigure(&wdtConfig);
+    esp_task_wdt_add(nullptr);
+
     pitReader.begin();
     food1Reader.begin();
     food2Reader.begin();
@@ -61,7 +71,7 @@ void setup() {
     const PersistedCookState restored = persistence.load();
     core.begin(restored.latchedFault != 0, restored.mode(), restored.targetCelsius);
 
-    homekit::setup(ctx, PIN_STATUS_LED, PIN_CONTROL_BUTTON);
+    homekit::setup(ctx, PIN_STATUS_LED, STATUS_IS_PIXEL, PIN_CONTROL_BUTTON);
 
     // Authorized BLE bond reset through the serial CLI.
     new SpanUserCommand('B', "delete all BLE bonds", [](const char*) {
@@ -73,6 +83,7 @@ void setup() {
 }
 
 void loop() {
+    esp_task_wdt_reset();
     homeSpan.poll();
 
     const uint32_t nowMs = millis();

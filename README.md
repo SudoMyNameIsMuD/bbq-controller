@@ -27,8 +27,9 @@ warnings in the source):
   driver that is electrically default-off, plus a rated supply and a physical
   blower power disconnect.
 - **Control/safety parameters** — target range, over-temperature trip,
-  timeouts and PD gains in `lib/bbqcore/` are placeholders to validate on the
-  bench and in supervised grill trials.
+  timeouts and PID gains in `lib/bbqcore/` pass the simulated-grill acceptance
+  tests but remain placeholders to validate on the bench and in supervised
+  grill trials.
 - **Apple Home range behavior** — characteristic ranges are widened, but the
   Home app's actual display/selection limits must be verified on a real
   iPhone. BLE is the full-range interface; values are never scaled or faked.
@@ -54,7 +55,8 @@ lib/bbqcore/             platform-independent controller core (host-tested)
   probechannel.*         per-probe fault model: open/short/out-of-range/stale/
                          invalid, freshness, stable-recovery debounce
   controllercore.*       single owner of mode/target/faults; safety arbitration
-  pdalgorithm.*          initial PD control algorithm
+  pidalgorithm.*         PID control algorithm (selected over the legacy fuzzy
+                         controller via grill simulation; see test_controlsim.hpp)
   persistedstate.*       versioned, CRC-checked persisted cook state
 
 lib/bbq/                 legacy fuzzy controller, kept for simulation comparison
@@ -73,6 +75,9 @@ libtest/                 Catch2 host tests (coretests)
 - Over-temperature latches the blower off, persists across reboots, and can
   only be cleared when the pit is stably healthy and cooled below the trip
   margin.
+- A main-loop task watchdog (15 s, panic reset) ensures a hung loop cannot
+  leave the blower running; a watchdog reset reboots into the default-off
+  startup path.
 - Food probe faults affect only that reading; no substitute value is ever
   published.
 - After reboot the blower starts off; an automatic cook resumes only after

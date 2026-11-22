@@ -20,7 +20,7 @@ add_executable(coretests
     coretests.cpp
     ../lib/bbqcore/probechannel.cpp
     ../lib/bbqcore/controllercore.cpp
-    ../lib/bbqcore/pdalgorithm.cpp
+    ../lib/bbqcore/pidalgorithm.cpp
     ../lib/bbqcore/persistedstate.cpp
 )
 target_include_directories(coretests PRIVATE ../lib/bbqcore)
